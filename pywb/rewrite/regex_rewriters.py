@@ -126,9 +126,9 @@ if (!self.__WB_pmw) {{ self.__WB_pmw = function(obj) {{ this.__WB_source = obj; 
 
         super(JSWombatProxyRules, self).__init__(rules)
 
-        self.first_buff = local_init_func + local_declares + '\n\n'
+        self.first_buff = local_init_func + local_declares + '{\n\n'
 
-        self.last_buff = '\n\n}'
+        self.last_buff = '\n\n}}'
 
 
 # =================================================================
