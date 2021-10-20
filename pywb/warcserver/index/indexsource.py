@@ -234,7 +234,7 @@ class XmlQueryIndexSource(BaseIndexSource):
         """
         closest = params.get('closest')
 
-        url = params.get('url', '')
+        url = params.get('alt_url') or params.get('url', '')
 
         matchType = params.get('matchType', 'exact')
 
