@@ -204,3 +204,11 @@ com,instagram)/amaliaulman 20141014162333 https://webenact.rhizome.org/excellenc
 
         assert(all([x.startswith(prefix) for x in filenames]))
 
+
+# ============================================================================
+def test_remote_api_url_encoding():
+    source = RemoteIndexSource.init_from_string('cdx+http://cdxserver.example/cdx')
+    assert (source._get_api_url({'url': 'http://iana.org/?query'}) ==
+            "http://cdxserver.example/cdx?url=http%3A//iana.org/%3Fquery&closest=&sort=closest")
+    assert (source._get_api_url({'url': 'http://iana.org/?query', 'method': 'POST', 'requestBody': 'body=1&two=2'}) ==
+            "http://cdxserver.example/cdx?url=http%3A//iana.org/%3Fquery&closest=&sort=closest&method=POST&requestBody=body%3D1%26two%3D2")

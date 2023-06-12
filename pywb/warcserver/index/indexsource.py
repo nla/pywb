@@ -134,6 +134,12 @@ class RemoteIndexSource(BaseIndexSource):
         if 'matchType' in params:
             api_url += '&matchType=' + params.get('matchType')
 
+        if params.get('method'):
+            api_url += '&method=' + quote_plus(params['method'])
+
+        if params.get('requestBody'):
+            api_url += '&requestBody=' + quote_plus(params['requestBody'])
+
         return api_url
 
     def load_index(self, params):

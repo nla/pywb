@@ -62,7 +62,7 @@ class IndexHandler(object):
 
         input_req = params.get('_input_req')
         if input_req:
-            params['alt_url'] = input_req.include_method_query(url)
+            params.update(input_req.include_method_query(url))
 
         cdx_iter = self.fuzzy(self.index_source, params)
 

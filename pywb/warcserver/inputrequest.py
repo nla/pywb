@@ -75,12 +75,12 @@ class DirectWSGIInputRequest(object):
 
     def include_method_query(self, url):
         if not url:
-            return url
+            return {'alt_url': url}
 
         method = self.get_req_method()
 
         if method == 'GET' or method == 'HEAD':
-            return url
+            return {'alt_url': url}
 
         mime = self._get_content_type()
         length = self._get_content_length()
@@ -96,7 +96,7 @@ class DirectWSGIInputRequest(object):
         if new_url != url:
             self.env['wsgi.input'] = buffered_stream
 
-        return new_url
+        return {'alt_url': new_url, 'method': method, 'requestBody': query.query}
 
     def get_full_request_uri(self):
         req_uri = self.env.get('REQUEST_URI')
