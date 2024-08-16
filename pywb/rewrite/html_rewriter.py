@@ -428,7 +428,10 @@ class HTMLRewriterMixin(StreamingRewriter):
                 attr_value = self._rewrite_url(attr_value, rw_mod)
 
             elif tag == 'script' and attr_name == 'src':
-                rw_mod = handler.get(attr_name)
+                if self.get_attr(tag_attrs, 'type') == 'module':
+                    rw_mod = 'esm_'
+                else:
+                    rw_mod = handler.get(attr_name)
                 ov = attr_value
                 attr_value = self._rewrite_url(attr_value, rw_mod)
                 if attr_value == ov and not ov.startswith(self.url_rewriter.NO_REWRITE_URI_PREFIX):

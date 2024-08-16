@@ -295,7 +295,7 @@ class JSWombatProxyRewriter(RegexRewriter):
         if self._is_module_check == None:
             buf = rwinfo.read_and_keep(BUFF_SIZE * 4)
 
-            if self.is_module(buf):
+            if self.is_module(buf) or self.url_rewriter.wburl.mod == 'esm_':
                 self.set_as_module()
             else:
                 self._is_module_check = False
