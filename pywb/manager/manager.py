@@ -7,12 +7,13 @@ import yaml
 import re
 import gzip
 import six
+import pathlib
 
 from distutils.util import strtobool
 from pkg_resources import resource_string, get_distribution
 
 from argparse import ArgumentParser, RawTextHelpFormatter
-from tempfile import mkdtemp
+from tempfile import mkdtemp, TemporaryDirectory
 from zipfile import ZipFile
 
 from pywb.utils.loaders import load_yaml_config
@@ -121,7 +122,7 @@ directory structure expected by pywb
                    'To create a new collection, run\n\n{1} init {0}')
             raise IOError(msg.format(self.coll_name, sys.argv[0]))
 
-    def add_archives(self, archives, uncompress_wacz=False):
+    def add_archives(self, archives, unpack_wacz=False):
         if not os.path.isdir(self.archive_dir):
             raise IOError('Directory {0} does not exist'.
                           format(self.archive_dir))
@@ -134,11 +135,11 @@ directory structure expected by pywb
                 if full_path:
                     warc_paths.append(full_path)
             elif self.WACZ_RX.match(archive):
-                if uncompress_wacz:
-                    self._add_wacz_uncompressed(archive)
+                if unpack_wacz:
+                    self._add_wacz_unpacked(archive)
                 else:
                     raise NotImplementedError('Adding waczs without unpacking is not yet implemented. Use '
-                                              '\'--uncompress-wacz\' flag to add the wacz\'s content.')
+                                              '\'--unpack-wacz\' flag to add the wacz\'s content.')
             else:
                 invalid_archives.append(archive)
 
@@ -147,20 +148,34 @@ directory structure expected by pywb
         if invalid_archives:
             logging.warning(f'Invalid archives weren\'t added: {", ".join(invalid_archives)}')
 
+    def _rename_warc(self, warc_basename):
+        dupe_idx = 1
+        ext = ''.join(pathlib.Path(warc_basename).suffixes)
+        pre_ext_name = warc_basename.split(ext)[0]
+
+        while True:
+            new_basename = f'{pre_ext_name}-{dupe_idx}{ext}'
+            if not os.path.exists(os.path.join(self.archive_dir, new_basename)):
+                break
+            dupe_idx += 1
+
+        return new_basename
+
     def _add_warc(self, warc):
-        filename = os.path.abspath(warc)
+        warc_source = os.path.abspath(warc)
+        source_dir, warc_basename = os.path.split(warc_source)
 
         # don't overwrite existing warcs with duplicate names
-        if os.path.exists(os.path.join(self.archive_dir, os.path.basename(filename))):
-            logging.warning(f'Warc {filename} wasn\'t added because of duplicate name.')
-            return None
+        if os.path.exists(os.path.join(self.archive_dir, warc_basename)):
+            warc_basename = self._rename_warc(warc_basename)
+            logging.info(f'Warc {os.path.basename(warc)} already exists - renamed to {warc_basename}.')
 
-        shutil.copy2(filename, self.archive_dir)
-        full_path = os.path.join(self.archive_dir, filename)
-        logging.info('Copied ' + filename + ' to ' + self.archive_dir)
-        return full_path
+        warc_dest = os.path.join(self.archive_dir, warc_basename)
+        shutil.copy2(warc_source, warc_dest)
+        logging.info(f'Copied {warc} to {self.archive_dir} as {warc_basename}')
+        return warc_dest
 
-    def _add_wacz_uncompressed(self, wacz):
+    def _add_wacz_unpacked(self, wacz):
         wacz = os.path.abspath(wacz)
         temp_dir = mkdtemp()
         warc_regex = re.compile(r'.+\.warc(\.gz)?$')
@@ -198,8 +213,9 @@ directory structure expected by pywb
             warc_destination_path = os.path.join(self.archive_dir, warc_filename)
 
             if os.path.exists(warc_destination_path):
-                logging.warning(f'Warc {warc_filename} wasn\'t added because of duplicate name.')
-                continue
+                warc_filename = self._rename_warc(warc_filename)
+                logging.info(f'Warc {warc_destination_path} already exists - renamed to {warc_filename}.')
+                warc_destination_path = os.path.join(self.archive_dir, warc_filename)
 
             warc_filename_mapping[os.path.basename(extracted_warc_file)] = warc_filename
             shutil.copy2(os.path.join(temp_dir, extracted_warc_file), warc_destination_path)
@@ -213,35 +229,35 @@ directory structure expected by pywb
         # delete temporary files
         shutil.rmtree(temp_dir)
 
-    @staticmethod
-    def _add_wacz_index(collection_index_path, wacz_index_path, filename_mapping):
+    def _add_wacz_index(self, collection_index_path, wacz_index_path, filename_mapping):
         from pywb.warcserver.index.cdxobject import CDXObject
 
-        # copy collection index to temporary directory
-        tempdir = mkdtemp()
-        collection_index_name = os.path.basename(collection_index_path)
-        collection_index_temp_path = os.path.join(tempdir, collection_index_name)
+        # rewrite wacz index to temporary index file
+        tempdir = TemporaryDirectory()
+        wacz_index_name = os.path.basename(wacz_index_path)
+        rewritten_index_path = os.path.join(tempdir.name, wacz_index_name)
 
-        if os.path.exists(collection_index_path):
-            shutil.copy2(collection_index_path, collection_index_temp_path)
-
-        with open(collection_index_temp_path, 'a') as collection_index_temp_file:
+        with open(rewritten_index_path, 'w') as rewritten_index:
             if wacz_index_path.endswith('.gz'):
-                wacz_index_file = gzip.open(wacz_index_path, 'rb')
+                wacz_index = gzip.open(wacz_index_path, 'rb')
             else:
-                wacz_index_file = open(wacz_index_path, 'rb')
-            collection_index_temp_file.write('\n')
-            for line in wacz_index_file.readlines():
+                wacz_index = open(wacz_index_path, 'rb')
+
+            for line in wacz_index:
                 cdx_object = CDXObject(cdxline=line)
                 if cdx_object['filename'] in filename_mapping:
                     cdx_object['filename'] = filename_mapping[cdx_object['filename']]
-                collection_index_temp_file.write(cdx_object.to_cdxj())
+                rewritten_index.write(cdx_object.to_cdxj())
 
-            wacz_index_file.close()
+        if not os.path.isfile(collection_index_path):
+            shutil.move(rewritten_index_path, collection_index_path)
+            return
 
-        # copy temporary index back to original location and delete temporary directory
-        shutil.move(collection_index_temp_path, collection_index_path)
-        shutil.rmtree(tempdir)
+        temp_coll_index_path = collection_index_path + '.tmp.' + timestamp20_now()
+        self._merge_indices(collection_index_path, rewritten_index_path, temp_coll_index_path)
+        shutil.move(temp_coll_index_path, collection_index_path)
+
+        tempdir.cleanup()
 
     def reindex(self):
         cdx_file = os.path.join(self.indexes_dir, self.DEF_INDEX_FILE)
@@ -294,19 +310,23 @@ directory structure expected by pywb
 
         merged_file = temp_file + '.merged'
 
-        last_line = None
-
-        with open(cdx_file, 'rb') as orig_index:
-            with open(temp_file, 'rb') as new_index:
-                with open(merged_file, 'w+b') as merged:
-                    for line in heapq.merge(orig_index, new_index):
-                        if last_line != line:
-                            merged.write(line)
-                            last_line = line
+        self._merge_indices(cdx_file, temp_file, merged_file)
 
         shutil.move(merged_file, cdx_file)
         #os.rename(merged_file, cdx_file)
         os.remove(temp_file)
+
+    @staticmethod
+    def _merge_indices(index1, index2, dest):
+        last_line = None
+
+        with open(index1, 'rb') as index1_f:
+            with open(index2, 'rb') as index2_f:
+                with open(dest, 'wb') as dest_f:
+                    for line in heapq.merge(index1_f, index2_f):
+                        if last_line != line:
+                            dest_f.write(line)
+                            last_line = line
 
     def set_metadata(self, namevalue_pairs):
         metadata_yaml = os.path.join(self.curr_coll_dir, 'metadata.yaml')
@@ -490,11 +510,17 @@ Create manage file based web archive collections
     # Add Warcs or Waczs
     def do_add(r):
         m = CollectionsManager(r.coll_name)
-        m.add_archives(r.files, r.uncompress_wacz)
+        m.add_archives(r.files, r.unpack_wacz)
 
-    add_archives_help = 'Copy ARCS/WARCS/WACZ to collection directory and reindex'
+    add_archives_help = 'Copy ARCs/WARCs to collection directory and reindex'
+    add_unpack_wacz_help = 'Copy WARCs from WACZ to collection directory and reindex'
     add_archives = subparsers.add_parser('add', help=add_archives_help)
-    add_archives.add_argument('--uncompress-wacz', dest='uncompress_wacz', action='store_true')
+    add_archives.add_argument(
+        '--unpack-wacz',
+        dest='unpack_wacz',
+        action='store_true',
+        help=add_unpack_wacz_help
+    )
     add_archives.add_argument('coll_name')
     add_archives.add_argument('files', nargs='+')
     add_archives.set_defaults(func=do_add)

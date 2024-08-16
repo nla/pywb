@@ -1,4 +1,4 @@
-Webrecorder pywb 2.7
+Webrecorder pywb 2.8
 ====================
 
 .. image:: https://raw.githubusercontent.com/webrecorder/pywb/main/pywb/static/pywb-logo.png
@@ -13,7 +13,7 @@ Web Archiving Tools for All
 
 `View the full pywb documentation <https://pywb.readthedocs.org>`_
 
-**pywb** is a Python (2 and 3) web archiving toolkit for replaying web archives large and small as accurately as possible.
+**pywb** is a Python 3 web archiving toolkit for replaying web archives large and small as accurately as possible.
 The toolkit now also includes new features for creating high-fidelity web archives.
 
 This toolset forms the foundation of Webrecorder project, but also provides a generic web archiving toolkit
@@ -60,9 +60,7 @@ Installation for Deployment
 
 To install pywb for usage, you can use:
 
-```shell
-pip install pywb
-```
+``pip install pywb``
 
 Note: depending on your Python installation, you may have to use `pip3` instead of `pip`.
 
@@ -70,9 +68,7 @@ Note: depending on your Python installation, you may have to use `pip3` instead 
 Installation from local copy
 ----------------------------
 
-```shell
-git clone https://github.com/webrecorder/pywb
-```
+``git clone https://github.com/webrecorder/pywb``
 
 To install from a locally cloned copy, install with ``pip install -e .`` or ``python setup.py install``.
 

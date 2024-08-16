@@ -1,7 +1,7 @@
 from gevent.monkey import patch_all; patch_all()
 
 from werkzeug.routing import Map, Rule, RequestRedirect, Submount
-from werkzeug.wsgi import pop_path_info
+from wsgiref.util import shift_path_info
 from six.moves.urllib.parse import urljoin, parse_qsl
 from six import iteritems
 from warcio.utils import to_native_str
@@ -558,9 +558,9 @@ class FrontEndApp(object):
             return
 
         if coll != '$root':
-            pop_path_info(environ)
+            shift_path_info(environ)
             if record:
-                pop_path_info(environ)
+                shift_path_info(environ)
 
         paths = [self.warcserver.root_dir]
 
@@ -667,10 +667,14 @@ class FrontEndApp(object):
             # store original script_name (original prefix) before modifications are made
             environ['ORIG_SCRIPT_NAME'] = environ.get('SCRIPT_NAME')
 
-            lang = args.pop('lang', self.default_locale)
+            lang = args.pop('lang', '')
             if lang:
-                pop_path_info(environ)
+                shift_path_info(environ)
+
+            if lang:
                 environ['pywb_lang'] = lang
+            elif self.default_locale:
+                environ['pywb_lang'] = self.default_locale
 
             response = endpoint(environ, **args)
 

@@ -5,7 +5,7 @@ from pywb.utils.loaders import load
 
 from six.moves.urllib.parse import urlsplit, quote
 
-from jinja2 import Environment, TemplateNotFound, contextfunction, select_autoescape
+from jinja2 import Environment, TemplateNotFound, pass_context, select_autoescape
 from jinja2 import FileSystemLoader, PackageLoader, ChoiceLoader
 
 from webassets.ext.jinja2 import AssetsExtension
@@ -139,7 +139,7 @@ class JinjaEnv(object):
             return loc_map.get(loc)
 
         def override_func(jinja_env, name):
-            @contextfunction
+            @pass_context
             def get_override(context, text):
                 translate = get_translate(context)
                 if not translate:
@@ -158,7 +158,7 @@ class JinjaEnv(object):
 
         # Special _Q() function to return %-encoded text, necessary for use
         # with text in banner
-        @contextfunction
+        @pass_context
         def quote_gettext(context, text):
             translate = get_translate(context)
             if not translate:
@@ -171,14 +171,14 @@ class JinjaEnv(object):
         self.jinja_env.globals['_Q'] = quote_gettext
         self.jinja_env.globals['default_locale'] = default_locale
 
-        @contextfunction
+        @pass_context
         def switch_locale(context, locale):
             environ = context.get('env')
             curr_loc = environ.get('pywb_lang', '')
 
             request_uri = environ.get('REQUEST_URI', environ.get('PATH_INFO'))
 
-            if curr_loc:
+            if curr_loc and request_uri.startswith('/' + curr_loc + '/'):
                 return request_uri.replace(curr_loc, locale, 1)
 
             app_prefix = environ.get('pywb.app_prefix', '')
@@ -188,7 +188,7 @@ class JinjaEnv(object):
 
             return app_prefix + '/' + locale + request_uri
 
-        @contextfunction
+        @pass_context
         def get_locale_prefixes(context):
             environ = context.get('env')
             locale_prefixes = {}
@@ -196,11 +196,11 @@ class JinjaEnv(object):
             orig_prefix = environ.get('pywb.app_prefix', '')
             coll = environ.get('SCRIPT_NAME', '')
 
-            if orig_prefix:
+            if orig_prefix and coll.startswith(orig_prefix):
                 coll = coll[len(orig_prefix):]
 
             curr_loc = environ.get('pywb_lang', '')
-            if curr_loc:
+            if curr_loc and coll.startswith('/' + curr_loc):
                 coll = coll[len(curr_loc) + 1:]
 
             for locale in loc_map.keys():

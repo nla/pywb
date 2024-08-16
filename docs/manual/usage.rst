@@ -114,6 +114,8 @@ Using Existing Web Archive Collections
 Existing archives of WARCs/ARCs files can be used with pywb with minimal amount of setup. By using ``wb-manager add``,
 WARC/ARC files will automatically be placed in the collection archive directory and indexed.
 
+In pywb 2.8.0 and later, preliminary support for WACZ files is also added with ``wb-manager add --unpack-wacz``. This will unpack the provided WACZ file, adding its WARCs and indices to the collection.
+
 By default ``wb-manager``, places new collections in ``collections/<coll name>`` subdirectory in the current working directory. To specify a different root directory, the ``wb-manager -d <dir>``. Other options can be set in the config file.
 
 If you have a large number of existing CDX index files, pywb will be able to read them as well after running through a simple conversion process.
@@ -154,20 +156,20 @@ To enable auto-indexing, run with ``wayback -a`` or ``wayback -a --auto-interval
 Creating a Web Archive
 ----------------------
 
-Using Webrecorder
-^^^^^^^^^^^^^^^^^
+Using ArchiveWeb.page
+^^^^^^^^^^^^^^^^^^^^^
 
-If you do not have a web archive to test, one easy way to create one is to use `Webrecorder <https://webrecorder.io>`_
+If you do not have a web archive to test, one easy way to create one is to use the `ArchiveWeb.page <https://archiveweb.page>`_ browser extension for Chrome and other Chromium-based browsers such as Brave Browser. ArchiveWeb.page records pages visited during an archiving session in the browser, and provides means of both replaying and downloading the archived items created.
 
-After recording, you can click **Stop** and then click `Download Collection` to receive a WARC (`.warc.gz`) file.
+Follow the instructions in `How To Create Web Archives with ArchiveWeb.page <https://archiveweb.page/en/usage/>`_. After recording, press **Stop** and then `download your collection <https://archiveweb.page/en/download/>`_ to receive a WARC (`.warc.gz`) file. If you choose to download your collection in the WACZ format, the WARC files can be found inside the zipped WACZ in the ``archive/`` directory.
 
-You can then use this with work with pywb.
+You can then use your WARCs to work with pywb.
 
 
 Using pywb Recorder
 ^^^^^^^^^^^^^^^^^^^
 
-The core recording functionality in Webrecorder is also part of :mod:`pywb`. If you want to create a WARC locally, this can be
+Recording functionality is also part of :mod:`pywb`. If you want to create a WARC locally, this can be
 done by directly recording into your pywb collection:
 
 1. Create a collection: ``wb-manager init my-web-archive`` (if you haven't already created a web archive collection)
@@ -178,6 +180,14 @@ For example, to record ``http://example.com/``, visit ``http://localhost:8080/my
 
 In this configuration, the indexing happens every 10 seconds.. After 10 seconds, the recorded url will be accessible for replay, eg:
 ``http://localhost:8080/my-web-archive/http://example.com/``
+
+
+Using Browsertrix
+^^^^^^^^^^^^^^^^^
+
+For a more automated browser-based web archiving experience, `Browsertrix <https://browsertrix.com/>`_ provides a web interface for configuring, scheduling, running, reviewing, and curating crawls of web content. Crawl activity is shown in a live screencast of the browsers used for crawling and all web archives created in Browsertrix can be easily downloaded from the application in the WACZ format.
+
+`Browsertrix Crawler <https://crawler.docs.browsertrix.com/>`_, which provides the underlying crawling functionality of Browsertrix, can also be run standalone in a Docker container on your local computer.
 
 
 HTTP/S Proxy Mode Access
