@@ -5,14 +5,16 @@ class WabacReplay
     this.url = url;
     this.ts = ts;
     this.staticPrefix = staticPrefix;
-    this.collName = new URL(prefix, "http://dummy").pathname.split('/')[1];
+    const prefixSegments = new URL(prefix, "http://dummy").pathname.split("/");
+    this.collName = prefixSegments[prefixSegments.length - 2];
+    this.scope = new URL(this.staticPrefix.replace(/static$/, ""), "http://dummy").pathname;
     this.adblockUrl = undefined;
 
     this.queryParams = {};
   }
 
   async init() {
-    const scope = "/";
+    const scope = this.scope;
 
     await navigator.serviceWorker.register(
       `${this.staticPrefix}/sw.js?` + new URLSearchParams(this.queryParams).toString(),
@@ -80,6 +82,6 @@ class WabacReplay
   // called by the Vue banner when the timeline is clicked
   load_url(url, ts) {
     const iframe = document.querySelector('#replay_iframe');
-    iframe.src = `/w/${this.collName}/${ts}mp_/${url}`;
+    iframe.src = `${this.scope}w/${this.collName}/${ts}mp_/${url}`;
   }
 }
