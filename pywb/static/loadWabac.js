@@ -32,9 +32,6 @@ class WabacReplay
       }
     });
 
-    const baseUrl = new URL(window.location);
-    baseUrl.hash = "";
-
     const proxyPrefix = "";
 
     const msg = {
@@ -43,11 +40,10 @@ class WabacReplay
       type: "live",
       file: {"sourceUrl": `proxy:${proxyPrefix}`},
       skipExisting: true,
+      topTemplateUrl: `data:text/html,<script>location='${this.prefix}$TS/$URL'</script>`,
       extraConfig: {
         prefix: proxyPrefix,
         isLive: false,
-        baseUrl: baseUrl.href,
-        baseUrlHashReplay: true,
         noPostToGet: false,
         archivePrefix: `/${this.collName}/`,
         archiveMod: "ir_",
