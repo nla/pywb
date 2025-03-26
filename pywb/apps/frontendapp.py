@@ -134,6 +134,7 @@ class FrontEndApp(object):
 
         if self.client_side_replay:
             self.url_map.add(Rule('/{0}/sw.js'.format(self.static_prefix), endpoint=self.serve_wabac_service_worker))
+            self.url_map.add(Rule('/w/<coll>/<int:timestamp>mp_/<path:url>', redirect_to='<coll>/<timestamp>/<url>'))
 
         self._init_coll_routes(coll_prefix)
 
