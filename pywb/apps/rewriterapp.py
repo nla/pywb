@@ -84,6 +84,8 @@ class RewriterApp(object):
                                                self._html_templ('head_insert_html'),
                                                self.custom_banner_view)
 
+        self.client_side_replay = self.config.get('client_side_replay', False)
+
         self.frame_insert_view = TopFrameView(self.jinja_env,
                                               self._html_templ('frame_insert_html'),
                                               self.banner_view)
@@ -384,7 +386,7 @@ class RewriterApp(object):
                                                        full_prefix, host_prefix,
                                                        kwargs)
 
-                keep_frame_response = (not kwargs.get('no_timegate_check') and is_timegate and not is_proxy) or redirect_to_exact
+                keep_frame_response = (not kwargs.get('no_timegate_check') and is_timegate and not is_proxy) or redirect_to_exact or self.client_side_replay
 
 
         if response and not keep_frame_response:
@@ -933,7 +935,8 @@ class RewriterApp(object):
                                                         environ,
                                                         self.frame_mod,
                                                         self.replay_mod,
-                                                        coll='',
+                                                        self.client_side_replay,
+                                                        coll=kwargs.get("coll"),
                                                         extra_params=extra_params)
 
         return None

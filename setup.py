@@ -5,9 +5,26 @@ from setuptools import setup, find_packages
 from setuptools.command.test import test as TestCommand
 import glob
 import os
+import pathlib
 import sys
+import urllib.request
 
 from pywb import __version__
+
+
+root_dir = pathlib.Path(__file__).parent
+
+
+WABAC_SW_URL = "https://cdn.jsdelivr.net/npm/@webrecorder/wabac@2.23.8/dist/sw.js"
+
+def download_wabac_sw():
+    print(f"Downloading {WABAC_SW_URL}")
+    with urllib.request.urlopen(WABAC_SW_URL) as response:  # nosec
+        with open(root_dir.joinpath("pywb", "static", "wabacSW.js"), "wb") as fh:
+            fh.write(response.read())
+
+
+download_wabac_sw()
 
 
 def get_long_description():
@@ -62,10 +79,6 @@ def generate_git_hash_py(pkg, filename='git_hash.py'):
 def load_requirements(filename):
     with open(filename, 'rt') as fh:
         requirements = fh.read().rstrip().split('\n')
-    if sys.version_info > (3, 0):
-        requirements.append("py3AMF")
-    else:
-        requirements.append("pyAMF")
     return requirements
 
 
